@@ -55,6 +55,102 @@ async def _send_images_to_openai(images_base64: list[str], prompt: str, model: s
         await client.close()
         
     return response.choices[0].message.content
+
+async def _send_text_to_openai(text: str, prompt: str, model: str) -> str:
+    """Send image to OpenAI and return the response text."""
+    client= openai.AsyncOpenAI()
+    try:
+        messages=[{"role": "system", "content": [{"type": "text", "text": prompt}]}]
+        messages.append({"role": "user", "content": [{"type": "text", "text": text}]})
+        if model.startswith("gpt-5"):
+            response = await client.chat.completions.create(
+                model=model,
+                response_format={"type": "json_object"},
+                messages=messages
+            )
+        else:
+            response = await client.chat.completions.create(
+                model=model,
+                temperature=0.1,
+                response_format={"type": "json_object"},
+                messages=messages
+            )
+
+    finally:
+        await client.close()
+        
+    return response.choices[0].message.content
+
+async def _generate_page_embedding(client: openai.AsyncOpenAI, page: 'Page', model: str):
+    """Generate embedding for a single page."""
+    if page.summary is not None:
+        input_text = page.summary
+    else:
+        input_text = page.text
+    embedding_response = await client.embeddings.create(input=input_text, model=model)
+    page.embedding = embedding_response.data[0].embedding
+
+
+async def _generate_fact_embedding(client: openai.AsyncOpenAI, fact: 'Fact', model: str):
+    """Generate embedding for a single fact."""
+    embedding_answer = await client.embeddings.create(input=fact.answer, model=model)
+    
+    fact.embedding = embedding_answer.data[0].embedding
+    for question in fact.questions:
+        question.embedding= (await client.embeddings.create(input=question.question, model=model)).data[0].embedding
+    
+
+async def _process_page_summary(page: 'Page', page_summary_prompt: str, openai_model: str) -> str:
+    """Process a single page to generate summary and keywords."""
+    page_image_base64 = _image_to_base64(page.image)
+    page_summary = await _send_images_to_openai([page_image_base64], page_summary_prompt, openai_model)
+    page_summary_json = json.loads(page_summary)
+    page.summary = page_summary_json["summary"]
+    page.keywords = page_summary_json["keywords"]
+    return page_summary
+
+async def _process_page_representation(page_idx: int, page: 'Page', total_pages: int, openai_model: str):
+    """Process a single page to determine best representation."""
+    try:
+        print(f"Detecting best representation for page {page_idx}/{total_pages}")
+        # Convert PIL Image to base64
+        image_base64 = _image_to_base64(page.image)
+        prompt = """
+        You are analyzing the screenshot of a pdf page of a page and you must decide if the page has many positional information;
+        Positional data are: table, list, timeline, graph, map, image, etc...
+        Expected output: a json file with below structure 
+        {
+            "best_representation": "image" | "text" | None,
+            "reasoning": "reasoning for the best representation"
+        }
+        """
+        # Send to OpenAI
+        response = await _send_images_to_openai([image_base64], prompt, openai_model)
+        
+        # Update page with AI response
+        json_data = json.loads(response)
+        page.best_representation = json_data["best_representation"]  # Mark as processed from image
+        return json_data
+        
+    except Exception as e:
+        raise
+
+class Fact:
+    def __init__(self, answer:str,questions:list[str]):
+        self.answer=answer
+        self.questions:list[Question]=[Question(question=question) for question in questions]
+        self.embedding:list[float] = None
+        self.neo4j_id:str=None
+
+
+class Question:
+    def __init__(self,question:str):
+        self.question:str=question
+        self.embedding:list[float] =  None
+
+
+
+        
 class Page:
     """Represents a single page with text and image."""
     
@@ -67,7 +163,18 @@ class Page:
         self.image_url:str = None
         self.best_representation: Literal["image", "text",None] = None
         self.summary:str = None
-        self.keywords:list[str] = None
+        self.keywords:list[str] = []
+        self.facts:list[Fact] = []
+        self.neo4j_id:str=None
+
+    async def embed_page_facts(self,model):
+        
+        client = openai.AsyncOpenAI()
+        try:
+            # Generate all embeddings concurrently
+            await asyncio.gather(*[_generate_fact_embedding(client, fact, model) for fact in self.facts if fact.questions is not None])
+        finally:
+            await client.close()
 
     def __str__(self):
         return f"Page(text_length={len(self.text)}, has_image={self.image is not None})"
@@ -92,7 +199,7 @@ class Document:
         self.doc_id:str = kwargs.get("doc_id", None)
         self.created_at:datetime = datetime.now()
         self.updated_at:datetime = datetime.now()
-
+        self.neo4j_id:str=None
 
     
     def get_all_text(self) -> str:
@@ -165,24 +272,15 @@ class Document:
         print(f"Embedding document: {self.path}")
         client = openai.AsyncOpenAI()
         try:
-            async def generate_page_embedding(page):
-                if page.summary is not None:
-                    input_text = page.summary
-                else:
-                    input_text = page.text
-                embedding_response = await client.embeddings.create(input=input_text, model=model)
-                page.embedding = embedding_response.data[0].embedding
-                
-            
             # Generate all embeddings concurrently
-            await asyncio.gather(*[generate_page_embedding(page) for page in self.pages])
+            await asyncio.gather(*[_generate_page_embedding(client, page, model) for page in self.pages])
         finally:
             await client.close()
         page_embeddings = [page.embedding for page in self.pages]
         self.embedding = average_normalize_and_format_embedding(page_embeddings)
 
 
-    async def get_document_summaries(self, openai_model: str = "gpt-5-nano") -> tuple[str, str]:
+    async def generate_document_summaries(self, openai_model: str = "gpt-5-nano") -> tuple[str, str]:
         print(f"Getting document summaries for document: {self.path}")
         document_summary_prompt = """
         <role>
@@ -235,16 +333,8 @@ class Document:
         self.summary = doc_summar_json["summary"]
         
         # Process all pages concurrently
-        async def process_page(page):
-            page_image_base64 = _image_to_base64(page.image)
-            page_summary = await _send_images_to_openai([page_image_base64], page_summary_prompt.format(document=document_summary), openai_model)
-            page_summary_json = json.loads(page_summary)
-            page.summary = page_summary_json["summary"]
-            page.keywords = page_summary_json["keywords"]
-            return page_summary
-        
         # Use asyncio.gather for concurrent processing
-        page_summaries = await asyncio.gather(*[process_page(page) for page in self.pages])
+        page_summaries = await asyncio.gather(*[_process_page_summary(page, page_summary_prompt.format(document=document_summary), openai_model) for page in self.pages])
         
         return document_summary, page_summaries
 
@@ -266,34 +356,89 @@ class Document:
             if page.image is None:
                 raise ValueError(f"Page {page_idx} has no image")
         
-        async def process_page_representation(page_idx, page):
-            try:
-                print(f"Detecting best representation for page {page_idx}/{len(self.pages)}")
-                # Convert PIL Image to base64
-                image_base64 = _image_to_base64(page.image)
-                prompt = """
-                You are analyzing the screenshot of a pdf page of a page and you must decide if the page has many positional information;
-                Positional data are: table, list, timeline, graph, map, image, etc...
-                Expected output: a json file with below structure 
-                {
-                    "best_representation": "image" | "text" | None,
-                    "reasoning": "reasoning for the best representation"
-                }
-                """
-                # Send to OpenAI
-                response = await _send_images_to_openai([image_base64], prompt, openai_model)
-                
-                # Update page with AI response
-                json_data = json.loads(response)
-                page.best_representation = json_data["best_representation"]  # Mark as processed from image
-                return json_data
-                
-            except Exception as e:
-                raise
-        
         # Process all pages concurrently
-        await asyncio.gather(*[process_page_representation(page_idx, page) for page_idx, page in enumerate(self.pages)])
+        await asyncio.gather(*[_process_page_representation(page_idx, page, len(self.pages), openai_model) for page_idx, page in enumerate(self.pages)])
     
+
+    async def _generate_page_1stfacts(self,page:Page,context=None, focus= None,openai_model: str = "gpt-5-nano"):
+        focus_prompt= f"Focus on {focus}" if focus is not None else ""
+        prompt=f"""
+        <task>
+        You are provided a page from a document. Extract from this page all facts that a reader must know. 
+        Each fact must be associated with a questions from a reader that this fact can answer.
+        {focus_prompt}
+        </task>
+        <context>
+        Description of document from which page is extracted:
+        {context}
+        </context>
+        <format>
+        Expected output: a list of json object corresponding to the list of facts extracted from the page.
+
+        {{
+            "facts":[ 
+        {{ 'fact': 'fact from the page', 'questions': ['questions answered by this fact', '...'] }},
+        {{ 'fact': 'fact from the page', 'questions': ['questions answered by this fact', '...'] }},
+        ...
+         ]
+        }}
+        </format>
+
+        """
+        if page.best_representation=="image":
+            if page.image_base64 is None:
+                if page.image == None:
+                    page.load_image()
+                page.image_base64 = _image_to_base64(page.image)
+            response = await _send_images_to_openai([page.image_base64], prompt, openai_model)
+        else:
+            response = await _send_text_to_openai(page.text, prompt, openai_model)
+        json_data = json.loads(response)
+        print(json_data)
+        page.facts=[]
+        for f in json_data["facts"]:
+            try:
+                new_fact=Fact(answer=f["fact"],questions=f["questions"])
+                page.facts.append(new_fact)
+    
+            except Exception as e:
+                print(f"Error processing fact: {f}")
+                print(e)
+                continue
+        return page.facts
+    
+    async def generate_document_1stfacts(self, context:str=None, focus:str=None,openai_mode="gpt-5-nano"):
+        # Generate facts for all pages concurrently
+        await asyncio.gather(*[
+            self._generate_page_1stfacts(page=page, context=context, focus=focus, openai_model=openai_mode) 
+            for page in self.pages
+        ])
+
+    async def embed_document_facts(self, model: str = "text-embedding-3-large"):
+        """
+        Generate embeddings for all facts across all pages in the document.
+        """
+        print(f"Embedding all facts for document: {self.path}")
+        client = openai.AsyncOpenAI()
+        try:
+            # Collect all facts from all pages
+            all_facts = []
+            for page in self.pages:
+                if hasattr(page, 'facts') and page.facts:
+                    all_facts.extend([fact for fact in page.facts if fact.questions is not None])
+            
+            if all_facts:
+                # Generate all embeddings concurrently
+                await asyncio.gather(*[_generate_fact_embedding(client, fact, model) for fact in all_facts])
+                print(f"Generated embeddings for {len(all_facts)} facts across {len(self.pages)} pages")
+            else:
+                print("No facts found to embed in document")
+        finally:
+            await client.close()
+
+
+
+
     def page_count(self) -> int:
         """Get the number of pages."""
         return len(self.pages)
@@ -312,6 +457,8 @@ class Document:
     
     def __repr__(self):
         return self.__str__()
+
+
 
 
 def  average_normalize_and_format_embedding(embeddings:list):
@@ -352,7 +499,7 @@ def upload_to_neo4j(pdf_document:Document) -> None:
 
     relation_to_insert=[]
     document_node=EntityNode(name=pdf_document.name,
-                            label="_Document",
+                            label="DOCUMENT",
                             properties={"path":str(pdf_document.path),
                                         "description":pdf_document.description,
                                         "name":pdf_document.name,
@@ -363,11 +510,11 @@ def upload_to_neo4j(pdf_document:Document) -> None:
                                         "created_at":pdf_document.created_at.isoformat() if pdf_document.created_at else None,
                                         "updated_at":pdf_document.updated_at.isoformat() if pdf_document.updated_at else None})
     node_to_insert.append(document_node)
-    document_node_id=document_node.id
+    pdf_document.neo4j_id=document_node.id
 
 
     for page in pdf_document.pages:
-        page_node=EntityNode(name=page.page_id,label="_Page",properties={"text":page.text,
+        page_node=EntityNode(name=page.page_id,label="PAGE",properties={"text":page.text,
         #"image":page.image,
         "embedding":page.embedding,
         "summary":page.summary,
@@ -375,10 +522,22 @@ def upload_to_neo4j(pdf_document:Document) -> None:
         "image_url":page.image_url,
         "best_representation":page.best_representation})
         node_to_insert.append(page_node)
-        page_node_id=page_node.id
+        page.neo4j_id=page_node.id
         
-        relation_to_insert.append(Relation(label="CONTAINS",properties={"page_id":page.page_id},source_id=document_node_id,target_id=page_node_id))
-    
+        relation_to_insert.append(Relation(label="CONTAINS",properties={"page_id":page.page_id},source_id=pdf_document.neo4j_id,target_id=page.neo4j_id))
+
+        for fact in page.facts:
+            fact_node=EntityNode(name=fact.answer,label="FACT",properties={"embedding": fact.embedding})
+            node_to_insert.append(fact_node)
+            fact.neo4j_id=fact_node.id
+            for question in fact.questions:
+                # Only create relation if question has proper embedding and question text
+                if hasattr(question, 'embedding') and question.embedding is not None and hasattr(question, 'question'):
+                    question_relation=Relation(label="QUESTION",properties={"embedding":question.embedding,"question":question.question},source_id=fact.neo4j_id,target_id=page.neo4j_id)
+                    relation_to_insert.append(question_relation)
+                else:
+                    print(f"Warning: Skipping question relation - missing embedding or question text: {question}")
+
     print(f"Upserting {len(node_to_insert)} nodes to Neo4j")
     graph_store.upsert_nodes(node_to_insert)
 
@@ -402,17 +561,23 @@ def upload_to_neo4j(pdf_document:Document) -> None:
     #     self.pdf_document.updated_at = datetime.fromisoformat(document_node.properties["updated_at"]) if document_node.properties["updated_at"] else None
 
 
-async def main():
-    pdf_path=r'downloads\2025-q2-earnings-results-presentation.pdf'
+
+async def preproc_pdf(pdf_path):
+    
     document=Document(path=pdf_path)
     await document.setup_from_path(image_container_path=Path("images"))
 
-    await document.get_document_summaries()
+    await document.generate_document_summaries()
     await document.detect_best_representation()
+    await document.generate_document_1stfacts()
+
+    for page in document.pages:
+        await page.embed_page_facts(model="text-embedding-3-large")
     upload_to_neo4j(document)
 
 
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    pdf_path=r'downloads\2025-q2-earnings-results-presentation.pdf'
+    asyncio.run(preproc_pdf(pdf_path))

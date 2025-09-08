@@ -22,3 +22,18 @@ graph_store = Neo4jPropertyGraphStore(
 )
 
 driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD),database="neo4j")
+
+def _format_results(results):
+    # Convert Neo4j results to a readable format
+    formatted = []
+    for record in results:
+        formatted.append("\n".join(f"{k}: {v}" for k, v in record.items()))
+    return "\n\n".join(formatted)
+
+def _execute_query(driver, cypher,readable_format=False):
+    with driver.session() as session:
+        result = session.run(cypher)
+        if readable_format:
+            return _format_results(result)
+        else:
+            return [record.data() for record in result]
