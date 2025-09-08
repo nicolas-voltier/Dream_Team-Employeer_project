@@ -22,6 +22,7 @@ import asyncio
 dotenv.load_dotenv()
 OPENAI_API_KEY=os.getenv("OPENAI_API_KEY")
 
+from DB_neo4j import graph_store, EntityNode,Relation
 
 def _image_to_base64(image: Image.Image) -> str:
     """Convert PIL Image to base64 string."""
@@ -458,7 +459,21 @@ class Document:
     def __repr__(self):
         return self.__str__()
 
+class Corpus:
+    def __init__(self, documents:list[Document], bank_name:str):
+        self.documents:list[Document]=documents
+        self.bank_name:str=bank_name
+        self.neo4j_id:str=None
+    
+    def __len__(self):
+        return len(self.documents)
 
+    def upload_to_neo4j(self):
+        CorpusNode=EntityNode(name=self.bank_name,label="CORPUS",properties={"bank_name":self.bank_name})
+        self.neo4j_id=CorpusNode.id
+        graph_store.upsert_nodes([CorpusNode])
+        for document in self.documents:
+            upload_to_neo4j(self.neo4j_id,document)
 
 
 def  average_normalize_and_format_embedding(embeddings:list):
@@ -488,16 +503,18 @@ def  average_normalize_and_format_embedding(embeddings:list):
     # Convert to list and ensure proper format for Neo4j
     return normalized_embedding.tolist()
 
-def upload_to_neo4j(pdf_document:Document) -> None:
+def upload_to_neo4j(corpus_node_id:str,pdf_document:Document) -> None:
     """
     Upload the PDF to Neo4j.
     """
     print(f"Uploading PDF to Neo4j: {pdf_document.path}")
-    from DB_neo4j import graph_store, EntityNode,Relation
+
     
     node_to_insert=[]
 
     relation_to_insert=[]
+
+
     document_node=EntityNode(name=pdf_document.name,
                             label="DOCUMENT",
                             properties={"path":str(pdf_document.path),
@@ -512,6 +529,8 @@ def upload_to_neo4j(pdf_document:Document) -> None:
     node_to_insert.append(document_node)
     pdf_document.neo4j_id=document_node.id
 
+    document_corpus_relation=Relation(label="PART_OF",source_id=pdf_document.neo4j_id,target_id=corpus_node_id)
+    relation_to_insert.append(document_corpus_relation)
 
     for page in pdf_document.pages:
         page_node=EntityNode(name=page.page_id,label="PAGE",properties={"text":page.text,
@@ -562,22 +581,36 @@ def upload_to_neo4j(pdf_document:Document) -> None:
 
 
 
-async def preproc_pdf(pdf_path):
+async def preproc_bank_documents(folder_path):
+
+
+    documents=[]
+    for file in os.listdir(folder_path):
+        print(f"------------- Processing file: {file} ---------------------")
+        if file.endswith(".pdf"):
+            pdf_path=os.path.join(folder_path,file)
     
-    document=Document(path=pdf_path)
-    await document.setup_from_path(image_container_path=Path("images"))
+            document=Document(path=pdf_path)
+            await document.setup_from_path(image_container_path=Path("images"))
 
-    await document.generate_document_summaries()
-    await document.detect_best_representation()
-    await document.generate_document_1stfacts()
+            await document.generate_document_summaries()
+            await document.detect_best_representation()
+            await document.generate_document_1stfacts()
 
-    for page in document.pages:
-        await page.embed_page_facts(model="text-embedding-3-large")
-    upload_to_neo4j(document)
+            # for page in document.pages:
+            #     await page.embed_page_facts(model="text-embedding-3-large")
+            await document.embed_document_facts(model="text-embedding-3-large")
+            documents.append(document)
+
+    corpus=Corpus(documents=documents, bank_name=Path(folder_path).name)
+    corpus.upload_to_neo4j()
+
+
+            #upload_to_neo4j(document)
 
 
 
 
 if __name__ == "__main__":
-    pdf_path=r'downloads\2025-q2-earnings-results-presentation.pdf'
-    asyncio.run(preproc_pdf(pdf_path))
+    pdf_path=r'C:\Users\volti\OneDrive\Documents\Python_projects\Dream_Team-Employeer_project\data\HSBC'
+    asyncio.run(preproc_bank_documents(pdf_path))

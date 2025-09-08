@@ -15,11 +15,17 @@ NEO4J_USERNAME="neo4j"
 NEO4J_PASSWORD=os.getenv("NEO4J_PASSWORD")
 
 
-graph_store = Neo4jPropertyGraphStore(
-    url=NEO4J_URI,
-    username=NEO4J_USERNAME,
-    password=NEO4J_PASSWORD,
-)
+graph_store = None
+
+def get_graph_store():
+    global graph_store
+    if graph_store is None:
+        graph_store = Neo4jPropertyGraphStore(
+            url=NEO4J_URI,
+            username=NEO4J_USERNAME,
+            password=NEO4J_PASSWORD,
+        )
+    return graph_store
 
 driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD),database="neo4j")
 
