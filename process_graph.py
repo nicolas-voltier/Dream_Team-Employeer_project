@@ -1,64 +1,120 @@
-from DB_neo4j import driver,_execute_query
-from llama_index.core.graph_stores.types import EntityNode,Relation
+from DB_neo4j import driver, _execute_query
+from llama_index.core.graph_stores.types import EntityNode, Relation
 from openai import AsyncOpenAI
 import asyncio
 
-async def embed_input(input:str,model:str):
-    client = AsyncOpenAI()
-    embedding_answer = await client.embeddings.create(input=input, model=model)
-    return embedding_answer.data[0].embedding
 
-
-async def query_graph(question:str, threshold:float=0.6,limit:int =5):
-    question_embedding = await embed_input(question,model="text-embedding-3-large")
-    query = f"""
-    MATCH (n:FACT)-[]-(p:PAGE)-[]-(d:DOCUMENT)
-    WHERE n.embedding IS NOT NULL
-    WITH n, p, d, 
-         reduce(dot = 0.0, i IN range(0, size(n.embedding)-1) | dot + n.embedding[i] * {question_embedding}[i]) /
-         (sqrt(reduce(norm1 = 0.0, x IN n.embedding | norm1 + x * x)) * 
-          sqrt(reduce(norm2 = 0.0, x IN {question_embedding} | norm2 + x * x))) AS similarity
-    WHERE similarity > {threshold}
-    WITH d, collect({{fact: n.name, page: p.name, similarity: similarity}}) AS relevant_facts, max(similarity) AS max_similarity
-    RETURN d.name AS document_name, d.summary AS document_summary, relevant_facts
-    ORDER BY max_similarity DESC
-    LIMIT {limit}
+class GraphProcessor:
     """
-
-    graph_out= _execute_query(driver,query)
-
-    for item in graph_out:
-        print("From document: ",item["document_name"])
-        print("With following executive summary: ",item["document_summary"])
-        print("Relevant facts found:")
-        for fact in item["relevant_facts"]:
-            print(f"  - Fact: {fact['fact']}")
-            print(f"  - From page: {fact['page']}")
-            print(f"  - Similarity: {fact['similarity']:.3f}")
-            print("  --")
-        print("================================")
-        
-        
-
-
-def compute_similarities():
-    query = """
-    MATCH (n1:FACT), (n2:FACT)
-    WHERE n1.embedding IS NOT NULL 
-    AND n2.embedding IS NOT NULL 
-    AND id(n1) < id(n2)
-    WITH n1, n2, 
-         reduce(dot = 0.0, i IN range(0, size(n1.embedding)-1) | dot + n1.embedding[i] * n2.embedding[i]) /
-         (sqrt(reduce(norm1 = 0.0, x IN n1.embedding | norm1 + x * x)) * 
-          sqrt(reduce(norm2 = 0.0, x IN n2.embedding | norm2 + x * x))) AS similarity
-    WHERE similarity > 0.7
-    MERGE (n1)-[r:SIMILARITY]->(n2)
-    SET r.cosine_similarity = similarity
+    A class to handle graph processing operations including querying, 
+    document retrieval, and similarity computations.
     """
-    return _execute_query(driver,query)
+    
+    def __init__(self):
+        self.driver = driver
+    
+    async def embed_input(self, input: str, model: str):
+        """Generate embeddings for input text using OpenAI API."""
+        client = AsyncOpenAI()
+        embedding_answer = await client.embeddings.create(input=input, model=model)
+        return embedding_answer.data[0].embedding
+
+    async def query_graph(self, question: str, threshold: float = 0.6, limit: int = 5, print_out= False):
+        """Query the graph database for facts similar to the given question."""
+        question_embedding = await self.embed_input(question, model="text-embedding-3-large")
+        query = f"""
+        MATCH (n:FACT)-[r]-(p:PAGE)-[]-(d:DOCUMENT)
+        WHERE n.embedding IS NOT NULL
+        WITH n, p, d, 
+             vector.similarity.cosine(n.embedding, {question_embedding}) AS similarity_fact,
+             vector.similarity.cosine(r.embedding, {question_embedding}) AS similarity_page
+
+        WITH n, p, d, similarity_fact, similarity_page, (similarity_fact + similarity_page)/2 AS similarity
+        WHERE similarity > {threshold}
+        WITH d, collect({{fact: n.name, page: p.name, similarity: similarity}}) AS relevant_facts, max(similarity) AS max_similarity
+        RETURN d.name AS document_name, d.summary AS document_summary, relevant_facts, max_similarity 
+        """
+
+        graph_out = _execute_query(self.driver, query)
+        
+        # Format the output as a string
+        formatted_output = ""
+        for item in graph_out:
+            formatted_output += f"From document: {item['document_name']}\n"
+            formatted_output += f"With following executive summary: {item['document_summary']}\n"
+            formatted_output += "Relevant facts found:\n"
+            sorted_facts = sorted(item["relevant_facts"], key=lambda x: float(x['similarity']), reverse=True)
+            for fact in sorted_facts[:limit]:
+                formatted_output += f"  - Fact: {fact['fact']}\n"
+                formatted_output += f"  - From page: {fact['page']}\n"
+                formatted_output += f"  - Similarity: {fact['similarity']:.3f}\n"
+                formatted_output += "  --\n"
+            formatted_output += "================================\n"
+        
+        if print_out:
+            print(formatted_output)
+        
+        return formatted_output
+
+    def find_corpus_labels(self, corpus_label: str = None):
+        """Find all available corpus labels in the database."""
+        find_corpus_query = """MATCH(c:CORPUS)
+            return DISTINCT c.name as corpus_name"""
+        corpus_list = _execute_query(self.driver, find_corpus_query)
+        output_str = "The available corpus labels are: "
+        for corpus in corpus_list:
+            output_str += f"{corpus['corpus_name']}, "
+        return output_str, corpus_list
+        
+    def get_document_with_descriptions(self, corpus_label: str = None):
+        """Retrieve documents with descriptions, optionally filtered by corpus label."""
+        if corpus_label is None:
+            corpus_filter = ""
+        else:
+            _, corpus_list = self.find_corpus_labels(corpus_label)
+            corpus_names = [corpus['corpus_name'] for corpus in corpus_list]
+            if corpus_label in corpus_names:
+                corpus_filter = f"WHERE c.name = '{corpus_label}'"
+            else:
+                return f"Corpus label {corpus_label} not found, the available labels are: {corpus_names}"
+
+        query = f"""
+        MATCH (d:DOCUMENT)-[]-(c:CORPUS)
+        {corpus_filter}
+        RETURN d.name AS document_name, d.summary AS document_summary, c.name AS bank_name
+        """
+        graph_out = _execute_query(self.driver, query)
+        # for item in graph_out:
+        #     print("From corpus under label: ", item["bank_name"])
+        #     print("Document: ", item["document_name"])
+        #     print("Summary: ", item["document_summary"])
+        #     print("================================")
+        return graph_out
+
+    def compute_similarities(self):
+        """Compute and store similarity relationships between facts."""
+        query = """
+        MATCH (n1:FACT), (n2:FACT)
+        WHERE n1.embedding IS NOT NULL 
+        AND n2.embedding IS NOT NULL 
+        AND id(n1) < id(n2)
+        WITH n1, n2, 
+             vector.similarity.cosine(n1.embedding, n2.embedding) AS similarity
+        WHERE similarity > 0.7
+        MERGE (n1)-[r:SIMILARITY]->(n2)
+        SET r.cosine_similarity = similarity
+        """
+        return _execute_query(self.driver, query)
 
 
-asyncio.run(query_graph("Was there any concern raised about Malta?"))
+# Create a default instance for backward compatibility
+
+
+
+
+if __name__ == "__main__":
+    graph_processor = GraphProcessor()
+    asyncio.run(graph_processor.query_graph("Did Malta come up in discussions within the HSBC corpus?",print_out=True))
 
 
 
