@@ -42,8 +42,8 @@ def main():
         for r in rows
     ])
 
-    # Run evaluation (LLM-backed, requires OPENAI_API_KEY)
-    custom_llm = ChatOpenAI(model="gpt-5-mini")  # or any other model
+    
+    custom_llm = ChatOpenAI(model="gpt-5-mini") 
     ragas_llm = LangchainLLMWrapper(custom_llm)
     result = evaluate(ds, metrics=[context_precision, context_recall],llm=ragas_llm)
 
