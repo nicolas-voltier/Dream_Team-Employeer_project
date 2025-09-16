@@ -10,6 +10,12 @@ PyMuPDF>=1.23.0
 Pillow>=10.0.0
 openai>=1.0.0
 numpy>=1.24.0
+openpyxl>=3.1.0   # Needed for reading Excel files with pandas
+ragas>=0.3.4      # For evaluation metrics
+datasets>=2.19.0  # Hugging Face datasets, required by ragas
+evaluate>=0.4.0   # Hugging Face evaluate, required by ragas
+matplotlib>=3.8.0 # For plotting results in ragas_report.py
+
 
 # Phoenix and OpenTelemetry dependencies for tracing
 arize-phoenix>=4.0.0
