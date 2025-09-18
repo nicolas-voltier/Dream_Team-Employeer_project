@@ -6,6 +6,9 @@ from ragas import evaluate
 from ragas.metrics import context_precision, context_recall
 from dotenv import load_dotenv
 
+from ragas.llms import LangchainLLMWrapper
+from langchain_openai import ChatOpenAI
+
 INPUT_FILE = "hsbc_q1_ragas_rows.jsonl"
 
 # Generate timestamped output filenames
@@ -42,6 +45,10 @@ def main():
 
     # Run evaluation (LLM-backed, requires OPENAI_API_KEY)
     result = evaluate(ds, metrics=[context_precision, context_recall])
+    
+    custom_llm = ChatOpenAI(model="gpt-5-mini") 
+    ragas_llm = LangchainLLMWrapper(custom_llm)
+    result = evaluate(ds, metrics=[context_precision, context_recall],llm=ragas_llm)
 
     print("=== RAGAS Metrics ===")
     print(result)

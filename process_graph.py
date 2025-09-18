@@ -110,6 +110,14 @@ class GraphProcessor:
 # Create a default instance for backward compatibility
 
 
+    def find_existing_node(self,node_name:str,label:str):
+        check_exists_query=f"""
+        MATCH(n:{label})
+        WHERE n.name='{node_name}'
+        RETURN n.name
+        """
+        found_nodes=_execute_query(self.driver,check_exists_query)
+        return found_nodes
 
 
 if __name__ == "__main__":

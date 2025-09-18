@@ -87,7 +87,7 @@ class AsyncConversation():
     def toolbox(self):
         rag_tool = FunctionTool.from_defaults(
         fn=self.graph_processor.query_graph,
-        name="search_contact_tool",
+        name="RAG_tool",
         description=f"""Search relevant facts to answert client question with knowledge base in RAG database.
         Parameters: question(str): the question of the client to search for in the RAG database.
         Returns: a list of facts with context from the documents in the database. The list will be empty if no facts are found (i.e: no fact with close enough similarity).
@@ -107,48 +107,67 @@ class AsyncConversation():
 
         return [rag_tool, get_docs_descriptions_tool]
 
-    def build_agent(self,llm_mode:str,verbose:bool=False) -> FunctionAgent:
-        llm = llama_openai(model=llm_mode)
+    def build_agent(self,llm_model:str,verbose:bool=False) -> FunctionAgent:
+        llm = llama_openai(model=llm_model)
         corpus_list,corpus_list=self.graph_processor.find_corpus_labels()
         system_prompt=f"""
-        <role>
-        You are supporting the Bank of England employee supporting the team to answer questions on the basis of Documents from bank under supervision.
-        </role>
-        
-        <instructions>
-        Typical conversation flow is as follow. Try proceeding step-by-step.
+            <task>
 
-        Step1: Greet the Bank of England employee and introduce yourself as a chatbot supporting the team.
-        "Hi, I'm the chatbot supporting the team. How can I help you today?"
-        Step2: (optional - if relevant and if not yet done in the historic) Introduce what you can do, i.e:
-            - provide an overview of the documents in the database (see context for the current list of ). 
-            - retrieved information from the database.
-        Step3: Collect employee intent and input:
-            - if employee wants to get an overview of database -> ask if any specific bank in mind.
-            - if employee wants to get an information from the database -> ask for the specific information they want to get.
-        Progress to step 4. when employee clearly mentions what they want to do and provided the input.
-        
-        Step 4:  Execute action
-            For information retrieval: use search_contact_tool with the question provided by the employee (contextualized if needed).
-            For database overview: use get_docs_descriptions_tool filtering corpus by bank name if provided.
+            <role>
+            You are the Bank of England Docs Assistant. Answer ONLY from the corpus using approved tools. If info is not in the corpus, say so.
+            </role>
 
-            Once answer provided and employee satisfied, go back to step3.
+            <principles>
+            Be brief (≤120 words). 
+            Mirror employee langage
+            Prioritize facts by relevance, focus the answer on the most relevant facts and use other facts as follow-up when relevant.  
+            Never use external facts. 
+            </principles>
 
-        </instructions>
+            <tools>
+            - RAG_tool : retrieve specific facts.
+            - get_docs_descriptions_tool : overview of corpus.
+            </tools>
 
-        <context>
-        The following documents have been bundled into the below corpus:
-        {corpus_list}
-        Use timetags of history to understand when the conversation takes place. 
-        </context>
+            <flow>
+            
+            1) Capabilities (if first turn or asked): overview or retrieval.
+            2) Identify intent:
+            - Overview → ask “Any bank i should filter on?”
+            - Retrieval → if needed, ask 1 clarifier (scope/time/entity).
+            3) Execute:
+            - Overview → call get_docs_descriptions_tool with filter if given.
+            - Retrieval → call search_contact_tool with the user question (+ constraints). If nothing relevant → say “Not found in corpus” and suggest narrower terms.
+            4) Loop: “Refine or check anything else?”
+            </flow>
 
-        <format>
-        Expected output: a json object in the following format:
-        {{
-            "answer": "answer to the client's question",
-        }}
-        </format>
-        """
+            <context>
+            Corpus: {corpus_list}
+            Use chat time for relative dates (“today”, “last quarter”).
+            </context>
+
+            <output>
+            Return ONLY this JSON (no extra fields, text, or tool dumps):
+            if retrieval:
+            {{"answer":"<conversational answer>\\n\\nReferences:\\n[1] <Doc title or ID>, p.<page> ; [2] <Doc> ...etc"}}
+            else:
+            {{"answer":"<conversational answer>"}}
+
+            Formatting rules:
+            - The value of "answer" MUST be a single JSON string.
+            - Put two newlines before "References:" exactly as shown (`\\n\\n`).
+            - Number references like [1], [2], in the same order you relied on them.
+            - Each reference: <Doc title or ID>, then page/section if available (use p.12 or §3.2).
+            - Separate multiple references with "; " on the SAME line (wrap naturally if long).
+            - If nothing is found in the corpus or there was no fact retrieval, skip the References line.
+
+            If no citations are available:
+            {{"answer":"Not found in corpus. Try narrowing the topic or providing a doc name.\\n\\nReferences:\\n—"}}
+            </output>
+
+
+            </task>
+            """
 
         tools=self.toolbox()
         agent=FunctionAgent(
@@ -157,61 +176,127 @@ class AsyncConversation():
             system_prompt=system_prompt,
             verbose=verbose
         )
-        if verbose:
-            print("-system prompt-")
-            print(system_prompt)
-            print("-end of system prompt-")
 
-        return agent
+
+        return agent, system_prompt
 
     
 
 
 
-async def conversation_process(verbose=False):
+async def conversation_process(verbose=False,print_reasoning_steps=False):
+    
+    # Create log file with timestamp
+    import os
+    
+    # Create logs directory if it doesn't exist
+    os.makedirs("chatbot_logs", exist_ok=True)
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_filename = f"chatbot_logs/chatbot_log_{timestamp}.log"
+    log_file = open(log_filename, 'w', encoding='utf-8')
+    log_file.write(f"Chatbot session started at {datetime.now().isoformat()}\n")
+    log_file.write("=" * 50 + "\n\n")
+
+    def log_print(message,verbose=False):
+        """Print message and log it if verbose logging is enabled"""
+        if verbose:
+            print(message)
+        
+        log_file.write(f"{message}\n")
+        log_file.flush()
 
     conversation=AsyncConversation(graph_processor=GraphProcessor(),client_label="Bank of England employee",answerer_label="Chatbot")
     
-    agent =conversation.build_agent(llm_mode="gpt-5-nano")
-    
-    print("Chatbot is up ask your first question")
-    while True:
-        user_input=input("Employee: ")
-        if verbose:
-            print("--processing--")
-        conversation.all_messages.append(Client_prompt_class(text=user_input,timestamp=datetime.now()))
-        conversation.generate_ready_to_read()
+    agent, system_prompt =conversation.build_agent(llm_model="gpt-5-nano")
 
-        user_prompt=f"""
-        Historic of conversation:
-        {conversation.ready_to_read}
+    log_print("-system prompt-",verbose)
+    log_print(system_prompt,verbose)
+    log_print("-end of system prompt-",verbose)
+
+    welcome_message=f"""Hi I'm the team's chatbot. How can I help you today?
         """
-        reasoning_steps=[]
-        ctx = Context(agent)
-        handler = agent.run(user_msg=user_prompt, ctx=ctx, max_iterations=10)
-        print("------- Reasoning steps -------")
-        async for ev in handler.stream_events():
+    log_print("CHATBOT: \n"+welcome_message,verbose)
+    conversation.all_messages.append(Bot_answer_class(text=welcome_message,timestamp=datetime.now()))
+    
 
-            if isinstance(ev, ToolCallResult):
-                print(f"\n🔧 Tool Call: {ev.tool_name}")
-                print(f"   Parameters: {ev.tool_kwargs}")
-                print(f"   Result: {ev.tool_output}")
-                print("-" * 50)
+    try:
+        while True:
+            user_input=input("EMPLOYEE: \n")
+            
+            # Check for exit command
+            if user_input.lower() in ['quit', 'exit', 'bye']:
+                if verbose:
+                    log_print("Session ended by user",verbose)
+                break
+                
+            
+            log_print("--processing--")
+            
+            # Log user input
+            log_print(f"EMPLOYEE: \n {user_input}",verbose)
+                
+            conversation.all_messages.append(Client_prompt_class(text=user_input,timestamp=datetime.now()))
+            conversation.generate_ready_to_read()
 
+            user_prompt=f"""
+            Historic of conversation:
+            {conversation.ready_to_read}
+            """
+            log_print("-user prompt-",verbose)
+            log_print(user_prompt,verbose)
+            log_print("-end of user prompt-",verbose)
+
+            reasoning_steps=[]
+            ctx = Context(agent)
+            handler = agent.run(user_msg=user_prompt, ctx=ctx, max_iterations=10)
+            
+
+            log_print("- Reasoning steps -",verbose)
+
+            async for ev in handler.stream_events():
+                if isinstance(ev, ToolCallResult):
+                    tool_info = f"\n🔧 Tool Call: {ev.tool_name}"
+                    params_info = f"   Parameters: {ev.tool_kwargs}"
+                    result_info = f"   Result: {ev.tool_output}"
+                    separator = "-" * 50
+                    
+
+                    log_print(tool_info,verbose)
+                    log_print(params_info,verbose)
+                    log_print(result_info,verbose)
+                    log_print(separator,verbose)
+
+
+            response = await handler
+            
+
+            log_print("\n- End of reasoning steps -",verbose)
+ 
+
+            conversation.all_messages.append(Bot_answer_class(text=json.loads(response.response.content)["answer"],timestamp=datetime.now()))
+
+
+                
+            # Parse and format the response with proper newlines
+            chatbot_answer = json.loads(response.response.content)["answer"]
+            # Replace literal \n with actual newlines for better formatting
+            formatted_answer = chatbot_answer.replace('\\n', '\n')
+            
+            chatbot_response = f"CHATBOT:\n{formatted_answer}"
+            print(chatbot_response)
+            log_print(chatbot_response,verbose)
+            log_print("-- end of processing--",verbose)
+            
+    except KeyboardInterrupt:
         
-        response = await handler
-        print("\n------- End of reasoning steps -------")
-
-        
-        conversation.all_messages.append(Bot_answer_class(text=json.loads(response.response.content)["answer"],timestamp=datetime.now()))
-        if verbose:
-            print("-- end of processing--")
-        # Parse and format the response with proper newlines
-        chatbot_answer = json.loads(response.response.content)["answer"]
-        # Replace literal \n with actual newlines for better formatting
-        formatted_answer = chatbot_answer.replace('\\n', '\n')
-        print("Chatbot:")
-        print(formatted_answer)
+        log_print("\nSession interrupted by user (Ctrl+C)",verbose)
+    finally:
+        # Close log file if it was opened
+  
+        log_file.write(f"\nChatbot session ended at {datetime.now().isoformat()}\n")
+        log_file.close()
+        print(f"Log saved to: {log_filename}")
                 
 
 
