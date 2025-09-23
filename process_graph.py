@@ -31,8 +31,10 @@ class GraphProcessor:
 
         WITH n, p, d, similarity_fact, similarity_page, (similarity_fact + similarity_page)/2 AS similarity
         WHERE similarity > {threshold}
-        WITH d, collect({{fact: n.name, page: p.name, similarity: similarity}}) AS relevant_facts, max(similarity) AS max_similarity
-        RETURN d.name AS document_name, d.summary AS document_summary, relevant_facts, max_similarity 
+        WITH d, 
+             [fact IN collect({{fact: n.name, page: p.name, similarity: similarity}}) | fact][..{limit}] AS relevant_facts,
+             max(similarity) AS max_similarity
+        RETURN d.name AS document_name, d.summary AS document_summary, relevant_facts, max_similarity
         """
 
         graph_out = _execute_query(self.driver, query)
@@ -44,7 +46,7 @@ class GraphProcessor:
             formatted_output += f"With following executive summary: {item['document_summary']}\n"
             formatted_output += "Relevant facts found:\n"
             sorted_facts = sorted(item["relevant_facts"], key=lambda x: float(x['similarity']), reverse=True)
-            for fact in sorted_facts[:limit]:
+            for fact in sorted_facts:
                 formatted_output += f"  - Fact: {fact['fact']}\n"
                 formatted_output += f"  - From page: {fact['page']}\n"
                 formatted_output += f"  - Similarity: {fact['similarity']:.3f}\n"
@@ -55,6 +57,7 @@ class GraphProcessor:
             print(formatted_output)
         
         return formatted_output
+
 
     def find_corpus_labels(self, corpus_label: str = None):
         """Find all available corpus labels in the database."""
@@ -120,10 +123,19 @@ class GraphProcessor:
         return found_nodes
 
 
+# if __name__ == "__main__":
+#     graph_processor = GraphProcessor()
+#     asyncio.run(graph_processor.query_graph("Did Malta come up in discussions within the HSBC corpus?",print_out=True))
+
 if __name__ == "__main__":
     graph_processor = GraphProcessor()
-    asyncio.run(graph_processor.query_graph("Did Malta come up in discussions within the HSBC corpus?",print_out=True))
-
+    asyncio.run(
+        graph_processor.query_graph(
+            question="What was the dividend declared?",
+            limit=5,
+            print_out=True
+        )
+    )
 
 
 
