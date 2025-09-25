@@ -31,6 +31,7 @@ class GraphProcessor:
 
         WITH n, p, d, similarity_fact, similarity_page, (similarity_fact + similarity_page)/2 AS similarity
         WHERE similarity > {threshold}
+        ORDER BY similarity DESC // enforce ORDER BY similarity before top-k slice in query_graph
         WITH d, 
              [fact IN collect({{fact: n.name, page: p.name, similarity: similarity}}) | fact][..{limit}] AS relevant_facts,
              max(similarity) AS max_similarity
