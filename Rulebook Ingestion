@@ -1,0 +1,159 @@
+[
+  {
+    "id": "g-sii-identification-and-buffer-uk",
+    "title": "PRA identification of G‑SIIs and G‑SII buffer",
+    "jurisdiction": "UK (PRA/Bank of England), Basel-aligned",
+    "effective_dates": {
+      "current_policy": "SoP2/25 published 3 Jul 2025; effective 31 Jul 2025"
+    },
+    "summary": "The PRA follows the Basel G‑SIB framework to identify UK-headquartered Global Systemically Important Institutions (G‑SIIs) at consolidated group level. Identified firms are assigned a firm-specific G‑SII CET1 buffer based on systemic importance (bucketed methodology).",
+    "key_requirements": [
+      "Scope: PRA-authorised UK HQ banks, building societies, PRA-designated investment firms, and qualifying parents at consolidated level. [1](https://www.bankofengland.co.uk/financial-stability/resolution/mrels-2025)[2](https://www.bankofengland.co.uk/paper/2025/ps/amendments-to-the-boes-approach-to-setting-a-mrel)",
+      "G‑SII buffer: additional CET1 requirement as a % of worldwide RWAs; amount varies by firm based on Basel bucket methodology. [1](https://www.bankofengland.co.uk/financial-stability/resolution/mrels-2025)[3](https://www.bankofengland.co.uk/-/media/boe/files/paper/2025/tracked-change-comparison-between-current-mrel-sop-and-future-mrel-sop)",
+      "Mechanics & enforcement: PRA may impose buffer via FSMA s55M/s192C; buffer sits in the combined buffer framework (distribution constraints apply if not met). [1](https://www.bankofengland.co.uk/financial-stability/resolution/mrels-2025)"
+    ],
+    "entities_keywords": ["G‑SIB", "G‑SII", "G‑SII buffer", "CET1", "FSMA s55M", "FSMA s192C"],
+    "references": [
+      {"ref": "PRA SoP2/25", "link": "[2](https://www.bankofengland.co.uk/paper/2025/ps/amendments-to-the-boes-approach-to-setting-a-mrel)"},
+      {"ref": "PRA SoP PDF (July 2025)", "link": "[1](https://www.bankofengland.co.uk/financial-stability/resolution/mrels-2025)"},
+      {"ref": "BCBS G‑SIB methodology", "link": "[3](https://www.bankofengland.co.uk/-/media/boe/files/paper/2025/tracked-change-comparison-between-current-mrel-sop-and-future-mrel-sop)"}
+    ]
+  },
+  {
+    "id": "g-sib-higher-loss-absorbency-basel-fsb",
+    "title": "Basel G‑SIB higher loss absorbency (HLA) & annual list",
+    "jurisdiction": "Global (BCBS/FSB); applied by national authorities",
+    "effective_dates": {
+      "list_update": "FSB 2024 list published 26 Nov 2024; buffer changes effective 1 Jan 2026 for bucket increases"
+    },
+    "summary": "The FSB, in consultation with BCBS and national authorities, publishes the annual list of G‑SIBs. Buffer buckets determine firm-specific higher loss absorbency (HLA) on top of Basel III minimums, effective 14 months after the list date.",
+    "key_requirements": [
+      "Annual identification and bucket assignment using Basel denominators and indicators (size, interconnectedness, substitutability, complexity, cross‑jurisdictional activity). [4](https://beta.bankofengland.co.uk/paper/2025/sop/mrel-statement-of-policy-july-2025-updating-2021)[3](https://www.bankofengland.co.uk/-/media/boe/files/paper/2025/tracked-change-comparison-between-current-mrel-sop-and-future-mrel-sop)",
+      "HLA buffer timelines: buckets set in Nov year T apply from Jan year T+2 (14‑month lag). [4](https://beta.bankofengland.co.uk/paper/2025/sop/mrel-statement-of-policy-july-2025-updating-2021)"
+    ],
+    "entities_keywords": ["FSB", "BCBS", "HLA", "bucket", "denominators", "cut-off"],
+    "references": [
+      {"ref": "FSB 2024 G‑SIB list & requirements", "link": "[4](https://beta.bankofengland.co.uk/paper/2025/sop/mrel-statement-of-policy-july-2025-updating-2021)"},
+      {"ref": "BCBS G‑SIB methodology hub", "link": "[3](https://www.bankofengland.co.uk/-/media/boe/files/paper/2025/tracked-change-comparison-between-current-mrel-sop-and-future-mrel-sop)"}
+    ]
+  },
+  {
+    "id": "tlac-and-uk-mrel",
+    "title": "TLAC (global) and MREL (UK) interaction",
+    "jurisdiction": "Global TLAC (FSB); UK MREL (Bank of England as Resolution Authority)",
+    "effective_dates": {
+      "tlac_phase_in": "From 1 Jan 2019 (global standard)",
+      "uk_mrel_policy": "Revised SoP published 15 Jul 2025; effective 1 Jan 2026"
+    },
+    "summary": "G‑SIBs must meet the FSB TLAC standard. In the UK, the Bank of England sets MREL for firms/groups (individual and consolidated). UK MREL is set considering the FSB TLAC standard and domestic resolution strategy.",
+    "key_requirements": [
+      "TLAC requirement sits alongside Basel capital; ensures loss‑absorbing and recapitalisation capacity in resolution. [4](https://beta.bankofengland.co.uk/paper/2025/sop/mrel-statement-of-policy-july-2025-updating-2021)",
+      "Bank of England sets MREL for UK institutions and certain group entities; considers TLAC when calibrating MREL. [5](https://www.bankofengland.co.uk/paper/2025/sop/mrel-statement-of-policy-july-2025-updating-2021)",
+      "Policy refreshed July 2025 with final policy effective 1 Jan 2026; amendments also issued via a Policy Statement. [6](https://www.bankofengland.co.uk/paper/2025/ps/amendments-to-the-boes-approach-to-setting-a-mrel)",
+      "Ongoing updates & consultations (e.g., CPs on MREL reporting/disclosure) tracked on ‘Policies, consultations and updates for firms’. [7](https://www.bankofengland.co.uk/financial-stability/resolution/policies-consultations-and-updates-for-firms)"
+    ],
+    "entities_keywords": ["TLAC", "MREL", "resolution entity", "eligible liabilities", "Banking Act 2009"],
+    "references": [
+      {"ref": "FSB G‑SIB requirements (incl. TLAC)", "link": "[4](https://beta.bankofengland.co.uk/paper/2025/sop/mrel-statement-of-policy-july-2025-updating-2021)"},
+      {"ref": "BoE MREL SoP (July 2025)", "link": "[5](https://www.bankofengland.co.uk/paper/2025/sop/mrel-statement-of-policy-july-2025-updating-2021)"},
+      {"ref": "BoE PS on MREL amendments (Jul 2025)", "link": "[6](https://www.bankofengland.co.uk/paper/2025/ps/amendments-to-the-boes-approach-to-setting-a-mrel)"},
+      {"ref": "BoE Resolution updates hub", "link": "[7](https://www.bankofengland.co.uk/financial-stability/resolution/policies-consultations-and-updates-for-firms)"}
+    ]
+  },
+  {
+    "id": "resolvability-raf",
+    "title": "UK Resolvability Assessment Framework (RAF) & disclosures",
+    "jurisdiction": "UK (Bank of England & PRA)",
+    "effective_dates": {
+      "raf_policy": "Final RAF policy since Jul 2019; latest public assessment 6 Aug 2024; related page updated 11 Jul 2025",
+      "reporting_cadence": "PS1/25 moved from fixed 2‑year cycles to periodic timing (effective 10 Jan 2025)"
+    },
+    "summary": "The RAF makes major UK banks responsible for demonstrating resolvability and mandates public disclosures. The Bank assesses against three outcomes: (a) adequate financial resources; (b) ability to continue through resolution and restructuring; (c) effective coordination and communication.",
+    "key_requirements": [
+      "Firms in scope must assess preparations and publish summaries; Bank publishes its own assessments. [8](https://www.bankofengland.co.uk/financial-stability/resolution/resolvability-assessment-and-disclosures)[9](https://www.bankofengland.co.uk/financial-stability/resolution/resolvability-assessment-framework)",
+      "Three resolvability outcomes and eight policy barriers guide expectations and testing. [10](https://beta.bankofengland.co.uk/financial-stability/resolution/resolvability-assessment-framework/resolvability-assessment-framework-policy-documents)",
+      "Timing flexibility introduced by PS1/25—PRA will set reporting/disclosure dates periodically. [11](https://beta.bankofengland.co.uk/prudential-regulation/publication/2025/january/resolution-assessments-amendments-to-reporting-and-disclosure-dates-policy-statement)",
+      "Latest assessment (Aug 2024) shows continued progress; stresses readiness post‑2023 bank failures. [12](https://www.bankofengland.co.uk/financial-stability/resolution/resolvability-assessment-framework/resovability-assessment-of-major-uk-banks-2024)"
+    ],
+    "entities_keywords": ["RAF", "resolvability", "public disclosure", "barriers to resolvability", "MREL", "operational continuity"],
+    "references": [
+      {"ref": "BoE RAF – overview & disclosures", "link": "[8](https://www.bankofengland.co.uk/financial-stability/resolution/resolvability-assessment-and-disclosures)"},
+      {"ref": "BoE RAF – framework page", "link": "[9](https://www.bankofengland.co.uk/financial-stability/resolution/resolvability-assessment-framework)"},
+      {"ref": "BoE RAF related policy docs", "link": "[10](https://beta.bankofengland.co.uk/financial-stability/resolution/resolvability-assessment-framework/resolvability-assessment-framework-policy-documents)"},
+      {"ref": "PRA PS1/25 (cadence change)", "link": "[11](https://beta.bankofengland.co.uk/prudential-regulation/publication/2025/january/resolution-assessments-amendments-to-reporting-and-disclosure-dates-policy-statement)"},
+      {"ref": "BoE 2024 RAF assessment", "link": "[12](https://www.bankofengland.co.uk/financial-stability/resolution/resolvability-assessment-framework/resovability-assessment-of-major-uk-banks-2024)"}
+    ]
+  },
+  {
+    "id": "governance-and-accountability-smcr",
+    "title": "Governance & accountability (SM&CR)",
+    "jurisdiction": "UK",
+    "effective_dates": {
+      "smcr_in_force": "Banks since 7 Mar 2016; ongoing updates and July 2025 review consultations"
+    },
+    "summary": "SM&CR strengthens accountability via approved Senior Managers, firm-led certification of key staff, and Conduct Rules. PRA maintains inventories of responsibilities and continues to consult on reforms to improve proportionality and efficiency.",
+    "key_requirements": [
+      "Senior manager approvals, prescribed responsibilities, management responsibility maps; firm certification and Conduct Rules coverage. [13](https://www.bankofengland.co.uk/prudential-regulation/Authorisations/senior-managers-regime-approvals)",
+      "PRA ‘Strengthening accountability’ hub and inventory of responsibilities; July 2025 updates noted. [14](https://www.bankofengland.co.uk/prudential-regulation/key-initiatives/strengthening-accountability)",
+      "Open consultations include a July 2025 review of SM&CR (CP18/25). [15](https://www.prarulebook.co.uk/)"
+    ],
+    "entities_keywords": ["SM&CR", "Senior Management Functions", "Conduct Rules", "responsibility map"],
+    "references": [
+      {"ref": "BoE SMR approvals page", "link": "[13](https://www.bankofengland.co.uk/prudential-regulation/Authorisations/senior-managers-regime-approvals)"},
+      {"ref": "BoE Strengthening accountability hub", "link": "[14](https://www.bankofengland.co.uk/prudential-regulation/key-initiatives/strengthening-accountability)"},
+      {"ref": "PRA Rulebook (consultations incl. CP18/25)", "link": "[15](https://www.prarulebook.co.uk/)"}
+    ]
+  },
+  {
+    "id": "risk-data-aggregation-bcbs239",
+    "title": "Risk data aggregation & reporting (BCBS 239)",
+    "jurisdiction": "Global (principles applied by national supervisors incl. PRA)",
+    "effective_dates": {
+      "publication": "Jan 2013; ongoing supervisory follow-up"
+    },
+    "summary": "BCBS 239 sets 14 principles across governance, data architecture, aggregation capabilities, reporting, and supervisory review—core to enhanced expectations for G‑SIBs’ risk data and reporting.",
+    "key_requirements": [
+      "Governance, data architecture & IT capable of timely, accurate, comprehensive risk aggregation under stress; clear supervisory review and remedial expectations. [16](https://www.bis.org/publ/bcbs239.pdf)"
+    ],
+    "entities_keywords": ["BCBS 239", "risk data aggregation", "risk reporting", "data lineage"],
+    "references": [
+      {"ref": "BCBS 239 official", "link": "[16](https://www.bis.org/publ/bcbs239.pdf)"}
+    ]
+  },
+  {
+    "id": "pillar3-and-disclosure",
+    "title": "Pillar 3 & other disclosure expectations (incl. resolvability/MREL)",
+    "jurisdiction": "UK",
+    "effective_dates": {
+      "cp16_25": "PRA CP16/25 (15 Jul 2025) proposes updates to resolvability resources, capital distribution constraints and basis for Pillar 3 disclosure"
+    },
+    "summary": "PRA Rulebook contains disclosure rules and guidance (Pillar 3). In 2025 the PRA proposed updates to resolvability resources and MREL disclosures as part of broader Pillar 3 changes.",
+    "key_requirements": [
+      "Maintain Pillar 3 disclosures in line with PRA Rulebook and supervisory statements. [15](https://www.prarulebook.co.uk/)",
+      "Track proposed 2025 changes on disclosure of resolvability and MREL resources via CP16/25 and related updates. [17](https://www.bankofengland.co.uk/prudential-regulation/publication/open-pra-consultations)[7](https://www.bankofengland.co.uk/financial-stability/resolution/policies-consultations-and-updates-for-firms)"
+    ],
+    "entities_keywords": ["Pillar 3", "MREL disclosure", "resolvability resources"],
+    "references": [
+      {"ref": "PRA Rulebook index", "link": "[15](https://www.prarulebook.co.uk/)"},
+      {"ref": "Open consultations (incl. CP16/25)", "link": "[17](https://www.bankofengland.co.uk/prudential-regulation/publication/open-pra-consultations)"},
+      {"ref": "BoE Resolution updates (15 Jul 2025)", "link": "[7](https://www.bankofengland.co.uk/financial-stability/resolution/policies-consultations-and-updates-for-firms)"}
+    ]
+  },
+  {
+    "id": "climate-risk-expectations",
+    "title": "Climate‑related financial risks (updated supervisory expectations)",
+    "jurisdiction": "UK (PRA)",
+    "effective_dates": {
+      "consultation": "CP10/25 opened 30 Apr 2025 to replace and update SS3/19"
+    },
+    "summary": "The PRA consulted in April 2025 on enhancing expectations for governance, risk management, scenario analysis, data and disclosure for climate risk—building on SS3/19. While not G‑SIB‑specific, these expectations apply to PRA‑regulated banks.",
+    "key_requirements": [
+      "Firms should align governance, risk management, scenario analysis, and data/disclosure to updated expectations once finalised. [18](https://sustainablefutures.linklaters.com/post/102k9zk/uk-pra-consultation-on-managing-climate-related-risks-not-new-rules-but-explicit)"
+    ],
+    "entities_keywords": ["SS3/19", "CP10/25", "climate scenario analysis"],
+    "references": [
+      {"ref": "Linklaters summary of CP10/25", "link": "[18](https://sustainablefutures.linklaters.com/post/102k9zk/uk-pra-consultation-on-managing-climate-related-risks-not-new-rules-but-explicit)"},
+      {"ref": "Deloitte commentary on SS3/19 updates", "link": "[19](https://www.deloitte.com/uk/en/Industries/financial-services/blogs/time-for-a-step-change-the-pra-raises-the-bar-on-climate-risk.html)"}
+    ]
+  }
+]
