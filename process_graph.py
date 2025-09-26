@@ -19,28 +19,33 @@ class GraphProcessor:
         embedding_answer = await client.embeddings.create(input=input, model=model)
         return embedding_answer.data[0].embedding
 
-    async def query_graph(self, question: str, threshold: float = 0.6, limit: int = 5, print_out= False):
+    async def query_graph(self, question: str, threshold: float = 0.6, limit: int = 5, doc_limit: int | None = None, print_out=False):
         """Query the graph database for facts similar to the given question."""
         question_embedding = await self.embed_input(question, model="text-embedding-3-large")
+
+        # Optional doc cap (backward-compatible: no cap if None)
+        doc_limit_clause = ""
+        if doc_limit is not None:
+            doc_limit_clause = f"\nORDER BY max_similarity DESC\nLIMIT {doc_limit}\n"
+
         query = f"""
         MATCH (n:FACT)-[r]-(p:PAGE)-[]-(d:DOCUMENT)
         WHERE n.embedding IS NOT NULL
-        WITH n, p, d, 
-             vector.similarity.cosine(n.embedding, {question_embedding}) AS similarity_fact,
-             vector.similarity.cosine(r.embedding, {question_embedding}) AS similarity_page
-
+        WITH n, p, d,
+            vector.similarity.cosine(n.embedding, {question_embedding}) AS similarity_fact,
+            vector.similarity.cosine(r.embedding, {question_embedding}) AS similarity_page
         WITH n, p, d, similarity_fact, similarity_page, (similarity_fact + similarity_page)/2 AS similarity
         WHERE similarity > {threshold}
         ORDER BY similarity DESC // enforce ORDER BY similarity before top-k slice in query_graph
-        WITH d, 
-             [fact IN collect({{fact: n.name, page: p.name, similarity: similarity}}) | fact][..{limit}] AS relevant_facts,
-             max(similarity) AS max_similarity
+        WITH d,
+            [fact IN collect({{fact: n.name, page: p.name, similarity: similarity}}) | fact][..{limit}] AS relevant_facts,
+            max(similarity) AS max_similarity
+        {doc_limit_clause}
         RETURN d.name AS document_name, d.summary AS document_summary, relevant_facts, max_similarity
         """
 
         graph_out = _execute_query(self.driver, query)
-        
-        # Format the output as a string
+
         formatted_output = ""
         for item in graph_out:
             formatted_output += f"From document: {item['document_name']}\n"
@@ -53,11 +58,12 @@ class GraphProcessor:
                 formatted_output += f"  - Similarity: {fact['similarity']:.3f}\n"
                 formatted_output += "  --\n"
             formatted_output += "================================\n"
-        
+
         if print_out:
             print(formatted_output)
-        
+
         return formatted_output
+
 
 
     def find_corpus_labels(self, corpus_label: str = None):

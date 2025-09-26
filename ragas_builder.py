@@ -6,10 +6,12 @@ from process_graph import GraphProcessor
 # -----------------------------
 # Config
 # -----------------------------
-INPUT_FILE = "data/HSBC_Q1-12_questions.xlsx"
-OUTPUT_FILE = "hsbc_q1_ragas_rows.jsonl"
+INPUT_FILE = "data/Stress-Test_Questions.xlsx" # change as needed
+OUTPUT_FILE = "stress_test_ragas_input.jsonl" # change as needed
 THRESHOLD = 0.6
 TOP_K = 5
+DOC_LIMIT = 3
+BANK_FILTER = "Barclays"  # Set to None to disable filtering
 
 # -----------------------------
 # Processor
@@ -57,11 +59,19 @@ async def build_rows():
 
     rows = []
     for _, row in df.iterrows():
+        bank = row.get("Bank", None)
+        if BANK_FILTER and bank and bank != BANK_FILTER:
+            continue  # Skip rows not matching the filter
+
         q = str(row["Question"]).strip()
         gt = str(row["Expected Answer"]).strip()
 
         raw_output = await gp.query_graph(
-            q, threshold=THRESHOLD, limit=TOP_K, print_out=False
+            q,
+            threshold=THRESHOLD,
+            limit=TOP_K,
+            doc_limit=DOC_LIMIT,
+            print_out=False
         )
         results = parse_query_output(raw_output)
 
