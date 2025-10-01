@@ -5,7 +5,7 @@ import os
 
 # Directory to look for result files
 RESULTS_DIR = "."
-DEFAULT_PATTERN = "barclays_20_tau_09_ragas_results_*.csv"
+DEFAULT_PATTERN = "barclays_20_tau_07_ragas_results_*.csv"
 
 def get_latest_csv():
     files = glob.glob(os.path.join(RESULTS_DIR, DEFAULT_PATTERN))

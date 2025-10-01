@@ -7,8 +7,8 @@ from process_graph import GraphProcessor
 # Config
 # -----------------------------
 INPUT_FILE = "data/Barclays_20_questions.xlsx" # change as needed
-OUTPUT_FILE = "barclays_20_input_tau_0.7.jsonl" # change as needed
-THRESHOLD = 0.7
+OUTPUT_FILE = "barclays_20_input_tau_0.9.jsonl" # change as needed
+THRESHOLD = 0.9
 TOP_K = 5
 DOC_LIMIT = 3
 BANK_FILTER = "Barclays"  # Set to None to disable filtering

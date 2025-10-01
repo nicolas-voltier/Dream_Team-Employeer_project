@@ -7,12 +7,12 @@ from ragas.metrics import context_precision, context_recall
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
-INPUT_FILE = "barclays_20_input_tau_0.7.jsonl"  # change as needed
+INPUT_FILE = "barclays_20_input.jsonl"  # change as needed
 
 # Generate timestamped output filenames
 STAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
-OUTPUT_CSV = f"barclays_20_tau_07_ragas_results_{STAMP}.csv" # change as needed
-OUTPUT_JSON = f"barclays_20_tau_07_ragas_results_{STAMP}.json" # change as needed
+OUTPUT_CSV = f"barclays_20_ragas_results_{STAMP}.csv" # change as needed
+OUTPUT_JSON = f"barclays_20_ragas_results_{STAMP}.json" # change as needed
 
 # Load environment variables from .env
 load_dotenv()

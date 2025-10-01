@@ -1,0 +1,182 @@
+[
+  {
+    "user_input":"Why did CET1 end 2022 at 13.9% and what immediately used ~40bps in Q1?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"Barclays “deliberately” ended at 13.9%; Q1 effects were the £500m buyback, Kensington completion, and reduction in transitional relief—together ~40bps.",
+    "context_precision":0.0,
+    "context_recall":1.0
+  },
+  {
+    "user_input":"What drove the −33bps “Other” hit to BUK NIM in Q4-22?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"Roughly half product dynamics (mortgage margin compression, UK cards IEL mix) and half treasury impacts from fixed-rate assets in the liquidity pool; expected to fade.",
+    "context_precision":0.0,
+    "context_recall":1.0
+  },
+  {
+    "user_input":"Did Barclays guide BUK NIM “>3.20%” for 2023 and why?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"Yes; structural hedge momentum and fading treasury drags underpin “greater than 3.20%.”",
+    "context_precision":0.0,
+    "context_recall":1.0
+  },
+  {
+    "user_input":"How did UK card behaviour affect impairments in Q1-23?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"Customers were “conservative,” repaying at high rates; benign credit kept impairments low.",
+    "context_precision":0.0,
+    "context_recall":1.0
+  },
+  {
+    "user_input":"What was the stance on AT1 calls in 2023?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"Barclays ran a surplus of AT1; each call assessed on economics at the time—no hard pledge.",
+    "context_precision":0.0,
+    "context_recall":1.0
+  },
+  {
+    "user_input":"By mid-2023, was Barclays still asset-sensitive to rate hikes?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"No—further base-rate rises would have “no impact” or be slightly negative to NIM.",
+    "context_precision":0.0,
+    "context_recall":0.0
+  },
+  {
+    "user_input":"How were UK deposits behaving in mid-2023?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"Customers proactively used deposits (e.g., mortgage prepayments); behaviour persistent; migration trends as expected.",
+    "context_precision":0.0,
+    "context_recall":0.0
+  },
+  {
+    "user_input":"Why did BUK NIM guidance widen in Q3-23?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"More intense deposit competition and flows; uncertainty in depositor behaviour led to a range.",
+    "context_precision":0.0,
+    "context_recall":1.0
+  },
+  {
+    "user_input":"Did planned restructuring jeopardise capital returns at 2023 year-end?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"Management emphasised strong starting CET1 (~14%) and commitment to distributions; comfortable operating 13–14% range.",
+    "context_precision":0.0,
+    "context_recall":0.0
+  },
+  {
+    "user_input":"Were UK deposits stabilising by Q1-24?",
+    "retrieved_contexts":[
+      "The UK deposit situation has stabilised in the first half."
+    ],
+    "reference":"Yes—signs of stabilisation and slower migration; NIM up 2bps with hedge support.",
+    "context_precision":0.0,
+    "context_recall":1.0
+  },
+  {
+    "user_input":"Did the 2024 US late-fee rule sit inside guidance?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"Yes—late fee impacts were embedded in the US plan\/targets.",
+    "context_precision":0.0,
+    "context_recall":1.0
+  },
+  {
+    "user_input":"What’s the path to >12% NIM in US Consumer?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"Pricing optimisation, higher retail deposit mix (target >75% of USCB deposits), and funding cost focus.",
+    "context_precision":0.0,
+    "context_recall":1.0
+  },
+  {
+    "user_input":"2024 H1 upgrade: what were the new NII guides?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"UK c.£6.3bn; Group c.£11bn, supported by deposit stability and hedge momentum.",
+    "context_precision":0.0,
+    "context_recall":0.0
+  },
+  {
+    "user_input":"Why was product margin positive in Q3-24?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"Deposit drag\/migration faded; mortgage churn broadly neutral; some positive margin from mortgages\/cards.",
+    "context_precision":0.0,
+    "context_recall":1.0
+  },
+  {
+    "user_input":"What were the 2025 BUK NII building blocks?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"Q4 run-rate x4 (ex-Tesco) + ~£400m Tesco + structural hedge reinvestment (assumed 3.5%) − impact of 4 base-rate cuts → ~£7.4bn.",
+    "context_precision":0.0,
+    "context_recall":1.0
+  },
+  {
+    "user_input":"How much of US cards receivables are “locked” and what’s the market size?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":">80% of receivables locked through 2029; c.$40bn of accounts come up for bid annually.",
+    "context_precision":0.0,
+    "context_recall":1.0
+  },
+  {
+    "user_input":"Why did USCB impairment include a PMA in Q1-25?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"Seasonally higher Q1 charge; delinquencies low\/stable; PMA added to skew prudently for likely macro forecast changes.",
+    "context_precision":0.0,
+    "context_recall":1.0
+  },
+  {
+    "user_input":"Does SRT financing in the FCA ‘Dear CFO’ letter affect Barclays?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"No—Barclays does not finance its own SRT investors; no capital consequence envisaged.",
+    "context_precision":0.0,
+    "context_recall":1.0
+  },
+  {
+    "user_input":"How much structural hedge income was locked-in by mid-2024?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"Locked-in 2024–26 income increased to ~£11.7bn by H1 (vs £9.3bn at Q1).",
+    "context_precision":0.0,
+    "context_recall":1.0
+  },
+  {
+    "user_input":"What’s the planning framework for hedge rolls to 2026?",
+    "retrieved_contexts":[
+
+    ],
+    "reference":"~£170bn maturing over 3 years; assume ~75% rolled; maturing yield ~1.5%; reinvest at market swaps (3.5% used in planning).",
+    "context_precision":0.0,
+    "context_recall":1.0
+  }
+]

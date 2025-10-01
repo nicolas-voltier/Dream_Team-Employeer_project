@@ -1,0 +1,21 @@
+user_input,retrieved_contexts,reference,context_precision,context_recall
+Why did CET1 end 2022 at 13.9% and what immediately used ~40bps in Q1?,[],"Barclays “deliberately” ended at 13.9%; Q1 effects were the £500m buyback, Kensington completion, and reduction in transitional relief—together ~40bps.",0.0,1.0
+What drove the −33bps “Other” hit to BUK NIM in Q4-22?,[],"Roughly half product dynamics (mortgage margin compression, UK cards IEL mix) and half treasury impacts from fixed-rate assets in the liquidity pool; expected to fade.",0.0,1.0
+Did Barclays guide BUK NIM “>3.20%” for 2023 and why?,[],Yes; structural hedge momentum and fading treasury drags underpin “greater than 3.20%.”,0.0,1.0
+How did UK card behaviour affect impairments in Q1-23?,[],"Customers were “conservative,” repaying at high rates; benign credit kept impairments low.",0.0,1.0
+What was the stance on AT1 calls in 2023?,[],Barclays ran a surplus of AT1; each call assessed on economics at the time—no hard pledge.,0.0,1.0
+"By mid-2023, was Barclays still asset-sensitive to rate hikes?",[],No—further base-rate rises would have “no impact” or be slightly negative to NIM.,0.0,0.0
+How were UK deposits behaving in mid-2023?,[],"Customers proactively used deposits (e.g., mortgage prepayments); behaviour persistent; migration trends as expected.",0.0,0.0
+Why did BUK NIM guidance widen in Q3-23?,[],More intense deposit competition and flows; uncertainty in depositor behaviour led to a range.,0.0,1.0
+Did planned restructuring jeopardise capital returns at 2023 year-end?,[],Management emphasised strong starting CET1 (~14%) and commitment to distributions; comfortable operating 13–14% range.,0.0,0.0
+Were UK deposits stabilising by Q1-24?,['The UK deposit situation has stabilised in the first half.'],Yes—signs of stabilisation and slower migration; NIM up 2bps with hedge support.,0.0,1.0
+Did the 2024 US late-fee rule sit inside guidance?,[],Yes—late fee impacts were embedded in the US plan/targets.,0.0,1.0
+What’s the path to >12% NIM in US Consumer?,[],"Pricing optimisation, higher retail deposit mix (target >75% of USCB deposits), and funding cost focus.",0.0,1.0
+2024 H1 upgrade: what were the new NII guides?,[],"UK c.£6.3bn; Group c.£11bn, supported by deposit stability and hedge momentum.",0.0,0.0
+Why was product margin positive in Q3-24?,[],Deposit drag/migration faded; mortgage churn broadly neutral; some positive margin from mortgages/cards.,0.0,1.0
+What were the 2025 BUK NII building blocks?,[],Q4 run-rate x4 (ex-Tesco) + ~£400m Tesco + structural hedge reinvestment (assumed 3.5%) − impact of 4 base-rate cuts → ~£7.4bn.,0.0,1.0
+How much of US cards receivables are “locked” and what’s the market size?,[],>80% of receivables locked through 2029; c.$40bn of accounts come up for bid annually.,0.0,1.0
+Why did USCB impairment include a PMA in Q1-25?,[],Seasonally higher Q1 charge; delinquencies low/stable; PMA added to skew prudently for likely macro forecast changes.,0.0,1.0
+Does SRT financing in the FCA ‘Dear CFO’ letter affect Barclays?,[],No—Barclays does not finance its own SRT investors; no capital consequence envisaged.,0.0,1.0
+How much structural hedge income was locked-in by mid-2024?,[],Locked-in 2024–26 income increased to ~£11.7bn by H1 (vs £9.3bn at Q1).,0.0,1.0
+What’s the planning framework for hedge rolls to 2026?,[],~£170bn maturing over 3 years; assume ~75% rolled; maturing yield ~1.5%; reinvest at market swaps (3.5% used in planning).,0.0,1.0
