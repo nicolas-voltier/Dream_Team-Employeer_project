@@ -19,7 +19,7 @@ from llama_index.core.base.llms.types import ChatMessage, MessageRole
 from llama_index.core.bridge.pydantic import BaseModel, ConfigDict, Field
 
 from llama_index.core.tools import BaseTool
-from process_graph import GraphProcessor
+from process_graph import GraphProcessor,Retrieval_overall
 from DB_neo4j import driver
 import asyncio
 import json
@@ -57,7 +57,8 @@ class AsyncConversation():
         self.ready_to_read: str=None    
         self.answerer_label:str=answerer_label
         self.client_label:str=client_label
-        self.RAG_outputs:list[dict]=[]
+        self.PRA_RAG_outputs:Retrieval_overall=None
+        self.BANK_RAG_outputs:Retrieval_overall=None
         self.graph_processor:GraphProcessor = graph_processor
         self.all_messages:list[Client_prompt_class,Bot_answer_class]=[]
 
@@ -84,12 +85,42 @@ class AsyncConversation():
 
         self.ready_to_read=ready_to_read
 
+    async def query_PRA(self,question:str):
+        outcome= await self.graph_processor.query_graph(question,fact_label="RULE",CORPUS={"included":["PRA_Rulebooks"]}, total_fact_limit=15)
+        self.PRA_RAG_outputs=outcome
+        return outcome.print_outcome()
+
+
+    async def query_banks(self,question:str, filter:list[str]=None):
+        
+        if filter is not None:
+            filter_CORPUS={"included":filter}
+        else:
+            filter_CORPUS={"excluded":["PRA_Rulebooks"]}
+        outcome= await self.graph_processor.query_graph(question,fact_label="FACT",CORPUS=filter_CORPUS, total_fact_limit=5)
+        self.BANK_RAG_outputs=outcome
+        return outcome.print_outcome()
+
     def toolbox(self):
-        rag_tool = FunctionTool.from_defaults(
-        fn=self.graph_processor.query_graph,
-        name="RAG_tool",
-        description=f"""Search relevant facts to answert client question with knowledge base in RAG database.
-        Parameters: question(str): the question of the client to search for in the RAG database.
+        rag_tool_bank = FunctionTool.from_defaults(
+        fn=self.query_banks,
+        name="RAG_tool_banks",
+        description=f"""Search relevant facts in banks documents to answer client questions with knowledge base in RAG database.
+        Parameters: 
+            - question(str): the question to search for in the RAG database.
+            - filter (list, optional): comma separated list of corpus name to filter on 
+            - total_fact_limit (int, optional): limit the total number of facts returned across all documents
+        Returns: a list of facts with context from the documents in the database. The list will be empty if no facts are found (i.e: no fact with close enough similarity).
+        """
+        )
+
+        rag_tool_pra = FunctionTool.from_defaults(
+        fn=self.query_PRA,
+        name="RAG_tool_pra",
+        description=f"""Search relevant facts in PRA rulebooks to understand what PRA rulebooks suggest to check in the banks documents.
+        Parameters: 
+            - question(str): the question of the client to search for in the RAG database.
+            - total_fact_limit (int, optional): limit the total number of facts returned across all documents
         Returns: a list of facts with context from the documents in the database. The list will be empty if no facts are found (i.e: no fact with close enough similarity).
         """
         )
@@ -105,68 +136,60 @@ class AsyncConversation():
         """
         )
 
-        return [rag_tool, get_docs_descriptions_tool]
+        return [rag_tool_bank, rag_tool_pra, get_docs_descriptions_tool]
 
     def build_agent(self,llm_model:str,verbose:bool=False) -> FunctionAgent:
         llm = llama_openai(model=llm_model)
         corpus_list,corpus_list=self.graph_processor.find_corpus_labels()
         system_prompt=f"""
-            <task>
-
-            <role>
-            You are the Bank of England Docs Assistant. Answer ONLY from the corpus using approved tools. If info is not in the corpus, say so.
-            </role>
-
-            <principles>
-            Be brief (≤120 words). 
-            Mirror employee langage
-            Prioritize facts by relevance, focus the answer on the most relevant facts and use other facts as follow-up when relevant.  
-            Never use external facts. 
-            </principles>
-
-            <tools>
-            - RAG_tool : retrieve specific facts.
-            - get_docs_descriptions_tool : overview of corpus.
-            </tools>
-
-            <flow>
+            ## Role
+            You are the Bank of England Docs Assistant, assitant employee investigating docuemntation from banks. 
             
-            1) Capabilities (if first turn or asked): overview or retrieval.
-            2) Identify intent:
-            - Overview → ask “Any bank i should filter on?”
-            - Retrieval → if needed, ask 1 clarifier (scope/time/entity).
-            3) Execute:
-            - Overview → call get_docs_descriptions_tool with filter if given.
-            - Retrieval → call search_contact_tool with the user question (+ constraints). If nothing relevant → say “Not found in corpus” and suggest narrower terms.
+            ## Tools
+            - **RAG_tool_banks** : retrieve information from bank documents. Use optional filter to search a specific bank.
+            - **RAG_tool_pra** : retrieve PRA rules in relation with user question.
+            - **get_docs_descriptions_tool** : overview of corpus.
+ 
+            ## Conversation flow
+            1) Get employee question if none being currently discussed: if employee ask for content use get_docs_descriptions_tool to get information about the corpus.
+            2) Once question collected and to answer it: start by using **RAG_tool_pra** to get information from PRA Rulebook to enhance the question from employee and answer employee by proposing the enhancements. 
+            3) Once  employee reacted to information on PRA: Use **RAG_tool_banks** to search for information in bank documents to answer employee question.            
             4) Loop: “Refine or check anything else?”
-            </flow>
+            
+            ## Instructions
+                - Prioritize facts by relevance, focus the answer on the most relevant facts and use other facts as follow-up when relevant.  
+                - Answer ONLY from the corpus using approved tools. If info is not in the corpus, say so.
+                - Never use external facts.
+                - WHen completing step 2) ALWAYS answer employee before proceeding to next steps (i.e: before using RAG_tool_banks)
+                - When completing step 3) ALWAYS separate large questions in smaller questions to ask the RAG_tool_banks.
+                - Whenu using RAG_tool_banks, on the basis of a PRA enhancement: 
+                    o the information from PRA may be quite exhaustive, you must therefore synthetize them in a serie of questions to ask the RAG_tool_banks.
+                    o You must then think: "Here is my audit plan on the basis of PRA extracted information: [1st question to ask the RAG_tool_banks] , [2nd question to ask the RAG_tool_banks] ...etc"
+                - if tool fails: never make up information, just say so.
 
-            <context>
+
+            ## Context
             Corpus: {corpus_list}
             Use chat time for relative dates (“today”, “last quarter”).
-            </context>
+            
+            ## Expected output
+                ### Output format: Return ONLY this JSON (no extra fields, text, or tool dumps):
 
-            <output>
-            Return ONLY this JSON (no extra fields, text, or tool dumps):
-            if retrieval:
-            {{"answer":"<conversational answer>\\n\\nReferences:\\n[1] <Doc title or ID>, p.<page> ; [2] <Doc> ...etc"}}
-            else:
-            {{"answer":"<conversational answer>"}}
+                {{"answer":"answer to employee","relevant_fact_ids":{{"BANKS":[<id1>,<id2>,...],"PRA":[<id1>,<id2>,...] }}  }}
 
-            Formatting rules:
-            - The value of "answer" MUST be a single JSON string.
-            - Put two newlines before "References:" exactly as shown (`\\n\\n`).
-            - Number references like [1], [2], in the same order you relied on them.
-            - Each reference: <Doc title or ID>, then page/section if available (use p.12 or §3.2).
-            - Separate multiple references with "; " on the SAME line (wrap naturally if long).
-            - If nothing is found in the corpus or there was no fact retrieval, skip the References line.
+                Note: Fact IDs follow the format: nodeType:uuid:internalId  the collected must be the whole format (e.g., "4:e43eb764-a2c6-44ce-993e-d18abbf24318:3137")
 
-            If no citations are available:
-            {{"answer":"Not found in corpus. Try narrowing the topic or providing a doc name.\\n\\nReferences:\\n—"}}
-            </output>
+                ### Formatting rules:
+                If answering employee to provide outcome of RAG_tool_pra or RAG_tool_banks:
+                    - The answer must be conversational and as synthetic as possible. Keep the answer as focused as possible keeping only essential facts.               
+                    - Store the fact ids that enabled you to answer in the appropriate field,i.e:
+                        o selected fact ids from RAG_tool_pra {{"PRA":[id1, id2,...]}}
+                        o selected fact ids from RAG_tool_banks {{"BANK":[id1, id2,...]}}
+                
+                If answering employee without using RAG_tool_pra or RAG_tool_banks: target a short answer (≤120 words). and leave relevant_fact_ids as empty dictionary {{}} 
 
+                Mirror employee langage            
 
-            </task>
             """
 
         tools=self.toolbox()
@@ -279,11 +302,31 @@ async def conversation_process(verbose=False,print_reasoning_steps=False):
 
                 
             # Parse and format the response with proper newlines
-            chatbot_answer = json.loads(response.response.content)["answer"]
+            llm_out=json.loads(response.response.content)
+            chatbot_answer = llm_out["answer"]
+            try:
+                bank_rag_ids=llm_out["relevant_fact_ids"]["BANKS"]
+                bank_ref=conversation.BANK_RAG_outputs.select_facts(bank_rag_ids)
+            except Exception as e:
+                bank_rag_ids=None      
+                bank_ref=""      
+                #print("Extraction of banks fact ids did not happen")
+            try:
+                pra_rag_ids=llm_out["relevant_fact_ids"]["PRA"]
+                pra_ref=conversation.PRA_RAG_outputs.select_facts(pra_rag_ids)
+            except Exception as e:
+                pra_ref=""
+                pra_rag_ids=None               
+                #print("Extraction of PRA fact ids did not happen")
+            
             # Replace literal \n with actual newlines for better formatting
             formatted_answer = chatbot_answer.replace('\\n', '\n')
             
-            chatbot_response = f"CHATBOT:\n{formatted_answer}"
+            chatbot_response = f"CHATBOT:\n{formatted_answer} \n \n"
+            if bank_ref!="":
+                chatbot_response += f"BANK {bank_ref} \n"
+            if pra_ref!="":
+                chatbot_response += f"PRA {pra_ref} \n"
             print(chatbot_response)
             log_print(chatbot_response,verbose)
             log_print("-- end of processing--",verbose)
